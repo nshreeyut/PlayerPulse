@@ -37,7 +37,7 @@ HOW TOOL CALLING WORKS:
 ------------------------
 1. User asks: "Why is hikaru at risk?"
 2. LLM sees: I have a tool called `explain_prediction` — I should call it
-3. LLM calls: explain_prediction(player_id="hikaru", platform="chess_com")
+3. LLM calls: explain_prediction(player_id="12345", platform="opendota")
 4. Tool runs: fetches SHAP values, formats them as text
 5. LLM receives: the tool's output
 6. LLM generates: a plain-English summary using the real data
@@ -50,14 +50,13 @@ LEARN MORE:
 """
 
 from langchain_core.tools import tool
-from langchain_openai import ChatOpenAI
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from api.services.data_service import get_player, get_dataset_summary
 from api.services.model_service import predict_churn
 from api.services.shap_service import get_player_shap, FEATURE_LABELS
-from api.config import settings
+from api.config import get_llm
 
 # ---------------------------------------------------------
 # SYSTEM PROMPT
@@ -70,7 +69,7 @@ SYSTEM_PROMPT = """You are a game analytics expert specializing in player churn 
 You have access to a machine learning system that:
   - Predicts whether players are about to stop playing their games (churn probability 0–1)
   - Explains WHY using SHAP feature importance values
-  - Covers multiple platforms: Chess.com, OpenDota (Dota 2), and Riot Games (LoL)
+  - Covers multiple platforms: OpenDota (Dota 2) and Steam
 
 Your audience includes game designers, business stakeholders, and data science students.
 
@@ -97,8 +96,8 @@ def get_player_data(player_id: str, platform: str) -> dict:
     Use this when the user asks about a specific player's risk level or statistics.
 
     Args:
-        player_id: The player's ID (e.g., "hikaru" for Chess.com)
-        platform:  The gaming platform key (chess_com, opendota, riot_lol)
+        player_id: The player's ID (e.g., "12345" for OpenDota)
+        platform:  The gaming platform key (opendota, steam)
 
     Returns a dict with player features and the churn prediction.
 
@@ -183,7 +182,7 @@ def get_agent() -> AgentExecutor:
 
     TODO: Implement this function.
     Steps:
-      1. llm = ChatOpenAI(model=settings.llm_model, api_key=settings.openai_api_key, streaming=True)
+      1. llm = get_llm(streaming=True)
 
       2. tools = [get_player_data, explain_prediction, get_dataset_context, suggest_retention_strategy]
 

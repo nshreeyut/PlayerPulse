@@ -11,7 +11,7 @@ class PlayerActivity(BaseModel):
     """A single game/match activity record, standardized across platforms."""
 
     player_id: str = Field(description="Unique player identifier")
-    platform: str = Field(description="Source platform (chess_com, opendota, riot_lol)")
+    platform: str = Field(description="Source platform (opendota, steam)")
     game_timestamp: datetime = Field(description="When the game was played")
     duration_seconds: int = Field(default=0, description="Game duration in seconds")
     result: str = Field(default="unknown", description="Game result (win/loss/draw)")

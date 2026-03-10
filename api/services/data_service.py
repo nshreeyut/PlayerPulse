@@ -13,7 +13,7 @@ routers, agents, and other services never know the difference.
 POLARS QUICK REFERENCE (you'll need these):
 --------------------------------------------
 Load a file:     pl.read_parquet(path)
-Filter rows:     df.filter(pl.col("platform") == "chess_com")
+Filter rows:     df.filter(pl.col("platform") == "opendota")
 Select columns:  df.select(["player_id", "engagement_score"])
 Convert to dict: df.to_dicts()          → list of dicts
 First row dict:  df.to_dicts()[0]       → single dict
@@ -55,7 +55,7 @@ def get_player(player_id: str, platform: str) -> dict | None:
 
     Args:
         player_id: the player's ID (e.g., "hikaru" for Chess.com)
-        platform:  registry key (e.g., "chess_com")
+        platform:  registry key (e.g., "opendota")
 
     Returns:
         A dict of all feature values, or None if the player isn't in the dataset.
@@ -101,7 +101,7 @@ def get_dataset_summary() -> dict:
         "total_players": 2000,
         "churned_count": 600,
         "churn_rate": 0.30,
-        "platforms": ["chess_com", "opendota"],
+        "platforms": ["opendota", "opendota"],
         "avg_engagement_score": 52.3,
         "avg_days_since_last_game": 8.1,
     }

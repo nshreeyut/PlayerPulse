@@ -59,14 +59,14 @@ def get_models():
 
 @router.get("")
 def search_players(
-    platform: str | None = Query(default=None, description="Filter by platform ID (e.g., chess_com)"),
+    platform: str | None = Query(default=None, description="Filter by platform ID (e.g., opendota)"),
     limit: int = Query(default=50, ge=1, le=500, description="Max number of players to return"),
 ):
     """
     Browse players in the dataset, optionally filtered by platform.
 
     Query parameters are parsed automatically from the URL:
-      GET /api/v1/players?platform=chess_com&limit=20
+      GET /api/v1/players?platform=opendota&limit=20
 
     TODO: Implement this endpoint.
     Steps:
@@ -92,7 +92,7 @@ def get_player_analytics(
     Response shape:
     {
         "player_id": "hikaru",
-        "platform": "chess_com",
+        "platform": "opendota",
         "features": { ...all feature columns... },
         "prediction": {
             "churn_probability": 0.73,

@@ -17,7 +17,7 @@ from game_churn.features.engineer import (
 
 def _make_activity_df(
     player_id: str = "test_player",
-    platform: str = "chess_com",
+    platform: str = "opendota",
     n_games: int = 20,
     start_days_ago: int = 25,
     end_days_ago: int = 1,
@@ -46,7 +46,7 @@ def test_time_window_features() -> None:
     """Test time window feature computation."""
     df = _make_activity_df(n_games=20, start_days_ago=25, end_days_ago=1)
     ref = datetime.now(tz=UTC)
-    features = compute_time_window_features(df, "test_player", "chess_com", ref)
+    features = compute_time_window_features(df, "test_player", "opendota", ref)
 
     assert features["player_id"] == "test_player"
     assert features["games_30d"] == 20
@@ -85,7 +85,7 @@ def test_churn_label_active() -> None:
     """Test churn label for active player."""
     df = _make_activity_df(end_days_ago=1)
     ref = datetime.now(tz=UTC)
-    result = compute_churn_label(df, "test_player", "chess_com", ref)
+    result = compute_churn_label(df, "test_player", "opendota", ref)
     assert result["churned"] is False
     assert result["days_since_last_game"] < 14
 
@@ -94,7 +94,7 @@ def test_churn_label_churned() -> None:
     """Test churn label for churned player."""
     df = _make_activity_df(start_days_ago=60, end_days_ago=20)
     ref = datetime.now(tz=UTC)
-    result = compute_churn_label(df, "test_player", "chess_com", ref)
+    result = compute_churn_label(df, "test_player", "opendota", ref)
     assert result["churned"] is True
     assert result["days_since_last_game"] >= 14
 
@@ -116,7 +116,7 @@ def test_build_features_complete() -> None:
     """Test full feature pipeline produces all expected keys."""
     df = _make_activity_df()
     ref = datetime.now(tz=UTC)
-    features = build_features_for_player(df, "test_player", "chess_com", ref)
+    features = build_features_for_player(df, "test_player", "opendota", ref)
 
     expected_keys = {
         "player_id",
