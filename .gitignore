@@ -47,6 +47,7 @@ htmlcov/
 
 # Project AI context (local only)
 CLAUDE.md
+WORKFLOW.md
 
 # DVC (removed from project)
 .dvc/
