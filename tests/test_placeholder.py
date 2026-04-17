@@ -2,4 +2,4 @@
 
 
 def test_import() -> None:
-    import game_churn  # noqa: F401
+    import playerpulse  # noqa: F401

@@ -52,20 +52,23 @@ import { useState, useEffect, useRef } from 'react'
 import { useChat } from '../../hooks/useChat'
 import './ChatPanel.css'
 
-// Suggested starter questions shown when the chat is empty
-const SUGGESTED_QUESTIONS = [
+const DEFAULT_SUGGESTED_QUESTIONS = [
   "Why is this player predicted to churn?",
   "What does the engagement score mean?",
   "How can we retain this player?",
   "What's the overall churn rate in the dataset?",
 ]
 
-function ChatPanel({ playerContext }) {
-  const { messages, streamingMessage, loading, sendMessage } = useChat(playerContext)
+/**
+ * @param {object}   playerContext        — current player data (passed to the chat hook for LLM context)
+ * @param {Function} [streamFn]           — optional custom stream function (used by demo mode)
+ * @param {string[]} [suggestedQuestions] — override default suggested questions
+ */
+function ChatPanel({ playerContext, streamFn, suggestedQuestions = DEFAULT_SUGGESTED_QUESTIONS }) {
+  const { messages, streamingMessage, loading, sendMessage } = useChat(playerContext, streamFn)
   const [inputText, setInputText] = useState('')
   const bottomRef = useRef(null)
 
-  // Auto-scroll to bottom when messages or streaming content changes
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, streamingMessage])
@@ -77,61 +80,61 @@ function ChatPanel({ playerContext }) {
     setInputText('')
   }
 
+  function handleSuggestion(q) {
+    sendMessage(q)
+  }
+
   return (
     <div className="chat-panel">
-      {/* Header */}
       <div className="chat-header">
         <h2>AI Analyst</h2>
         {playerContext && (
           <span className="chat-context-label">
-            {/* TODO: Show "Analyzing: {playerContext.player_id} on {playerContext.platform}" */}
+            {playerContext.player_id} · {playerContext.platform}
           </span>
         )}
       </div>
 
-      {/* Message list */}
       <div className="chat-messages">
-        {/*
-          TODO: Render message history.
-          Each message has: { role: 'user' | 'assistant', content: '...' }
-          Apply different CSS classes for user vs assistant.
-        */}
+        {messages.map((msg, i) => (
+          <div key={i} className={`message message-${msg.role}`}>
+            {msg.content}
+          </div>
+        ))}
 
-        {/* Suggested questions (shown when no messages yet) */}
+        {streamingMessage && (
+          <div className="message message-assistant message-streaming">
+            {streamingMessage}
+            <span className="typing-cursor" />
+          </div>
+        )}
+
+        {loading && !streamingMessage && (
+          <div className="message message-assistant message-streaming">
+            <span className="typing-cursor" />
+          </div>
+        )}
+
         {messages.length === 0 && !loading && (
           <div className="suggested-questions">
             <p className="suggested-label">Try asking:</p>
-            {SUGGESTED_QUESTIONS.map((q) => (
-              <button
-                key={q}
-                className="suggestion-btn"
-                onClick={() => {
-                  setInputText(q)
-                  // TODO: optionally auto-send: sendMessage(q)
-                }}
-              >
+            {suggestedQuestions.map((q) => (
+              <button key={q} className="suggestion-btn" onClick={() => handleSuggestion(q)}>
                 {q}
               </button>
             ))}
           </div>
         )}
 
-        {/*
-          TODO: Render the live streaming message bubble when streamingMessage is non-empty.
-          Show a pulsing cursor or "typing..." indicator when loading=true but streamingMessage is empty.
-        */}
-
-        {/* Anchor div for auto-scrolling */}
         <div ref={bottomRef} />
       </div>
 
-      {/* Input bar */}
       <form className="chat-input-bar" onSubmit={handleSubmit}>
         <input
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="Ask about this player or the dataset…"
+          placeholder={playerContext ? `Ask me about ${playerContext.player_id}…` : 'Ask about this player or the dataset…'}
           disabled={loading}
           className="chat-input"
         />

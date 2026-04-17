@@ -57,7 +57,7 @@ MODEL_REGISTRY: dict[str, dict] = {
     # ──────────────────────────────────────────────────────────
     # TO ADD A NEW MODEL:
     # ──────────────────────────────────────────────────────────
-    # 1. Train your model in the ML pipeline (src/game_churn/models/train.py)
+    # 1. Train your model in the ML pipeline (src/playerpulse/models/train.py)
     # 2. Save it: joblib.dump(model, "models/my_new_model.joblib")
     # 3. Uncomment and fill in the entry below:
     #

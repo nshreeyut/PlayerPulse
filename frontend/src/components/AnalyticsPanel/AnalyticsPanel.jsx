@@ -55,36 +55,82 @@
 import ShapChart from '../ShapChart/ShapChart'
 import './AnalyticsPanel.css'
 
+const RISK_COLORS = { High: '#e05c5c', Medium: '#f5a623', Low: '#5cb85c' }
+
+const KEY_STATS = [
+  { key: 'engagement_score',    label: 'Engagement Score',      fmt: v => v.toFixed(1) },
+  { key: 'days_since_last_game', label: 'Days Since Last Game',  fmt: v => v },
+  { key: 'games_7d',            label: 'Games (7 Days)',         fmt: v => v },
+  { key: 'win_rate_7d',         label: 'Win Rate (7 Days)',      fmt: v => (v * 100).toFixed(0) + '%' },
+]
+
+function AnalyticsSkeleton() {
+  return (
+    <div className="analytics-panel">
+      <div className="player-header">
+        <div>
+          <div className="skeleton skeleton-name" />
+          <div className="skeleton skeleton-platform" />
+        </div>
+        <div className="skeleton skeleton-badge" />
+      </div>
+      <div className="prediction-card">
+        <div className="skeleton skeleton-prob" />
+        <div className="skeleton skeleton-label" />
+        <div className="skeleton skeleton-bar" />
+      </div>
+      <div className="stats-grid">
+        {[0, 1, 2, 3].map(i => (
+          <div key={i} className="stat-card">
+            <div className="skeleton skeleton-stat-val" />
+            <div className="skeleton skeleton-stat-label" />
+          </div>
+        ))}
+      </div>
+      <div className="skeleton skeleton-chart" />
+    </div>
+  )
+}
+
 function AnalyticsPanel({ player, loading, error }) {
-  // 1. Loading state
-  if (loading) {
-    return <div className="analytics-panel loading">Loading player analytics…</div>
-    // TODO: Replace with a proper skeleton loader
-  }
+  if (loading) return <AnalyticsSkeleton />
+  if (error)   return <div className="analytics-panel error">{error}</div>
+  if (!player) return null
 
-  // 2. Error state
-  if (error) {
-    return <div className="analytics-panel error">{error}</div>
-    // TODO: Style this as a proper error card with an icon
-  }
-
-  // 3. Empty state (no search yet, or player is null)
-  if (!player) {
-    return null
-  }
-
-  const { features, prediction, shap_values } = player
+  const { features, prediction, shap_values, player_id, platform } = player
+  const { churn_probability, churn_predicted, risk_level, model_used } = prediction
+  const riskColor = RISK_COLORS[risk_level] || '#888'
+  const pct = (churn_probability * 100).toFixed(1)
 
   return (
     <div className="analytics-panel">
-      {/* TODO: Build each section described above */}
-      <p>TODO: Render player analytics for {player.player_id} on {player.platform}</p>
+      <div className="player-header">
+        <div>
+          <div className="player-name">{player_id}</div>
+          <div className="player-platform">{platform}</div>
+        </div>
+        <span className="risk-badge" style={{ background: riskColor }}>{risk_level} Risk</span>
+      </div>
 
-      {/* Churn probability — hint: (prediction.churn_probability * 100).toFixed(1) + "%" */}
+      <div className="prediction-card">
+        <div className="churn-prob">{pct}%</div>
+        <div className="churn-label">Churn Probability</div>
+        <div className="prob-bar">
+          <div className="prob-fill" style={{ width: `${pct}%`, background: riskColor }} />
+        </div>
+        <div className="churn-status">{churn_predicted ? '⚠ Predicted to Churn' : '✓ Predicted Active'}</div>
+        <div className="model-used">Model: {model_used}</div>
+      </div>
 
-      {/* Key stats grid — hint: use Object.entries(features) or pick specific keys */}
+      <div className="stats-grid">
+        {KEY_STATS.map(({ key, label, fmt }) => (
+          <div key={key} className="stat-card">
+            <div className="stat-value">{features[key] != null ? fmt(features[key]) : '—'}</div>
+            <div className="stat-label">{label}</div>
+          </div>
+        ))}
+      </div>
 
-      {/* SHAP chart */}
       {shap_values && <ShapChart shapValues={shap_values} />}
     </div>
   )

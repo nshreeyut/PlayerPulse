@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 import polars as pl
 
-from game_churn.features.engineer import (
+from playerpulse.features.engineer import (
     build_features_for_player,
     compute_churn_label,
     compute_engagement_score,

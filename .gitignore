@@ -33,6 +33,9 @@ mlflow.db
 # CatBoost
 catboost_info/
 
+# Frontend build output
+frontend/dist/
+
 # Misc
 .ruff_cache/
 .mypy_cache/

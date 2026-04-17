@@ -66,18 +66,48 @@
 import { useState, useRef } from 'react'
 import { streamChat } from '../api/chat'
 
-export function useChat(playerContext = null) {
+/**
+ * @param {object|null} playerContext — current player data sent to the LLM as context
+ * @param {Function}    [streamFn]    — optional custom stream function (defaults to streamChat)
+ *                                     Signature: ({ message, playerContext, conversationHistory, onChunk, onDone, onError }) => void
+ */
+export function useChat(playerContext = null, streamFn = null) {
   const [messages, setMessages] = useState([])
   const [streamingMessage, setStreamingMessage] = useState('')
   const [loading, setLoading] = useState(false)
-  const streamRef = useRef('')  // tracks accumulated stream text (see note above)
+  const streamRef = useRef('')
 
-  // TODO: implement sendMessage
+  const stream = streamFn || streamChat
 
-  return {
-    messages,
-    streamingMessage,
-    loading,
-    sendMessage: () => {},  // TODO: replace with real implementation
+  async function sendMessage(text) {
+    const userMsg = { role: 'user', content: text }
+    setMessages(prev => [...prev, userMsg])
+    setLoading(true)
+    setStreamingMessage('')
+    streamRef.current = ''
+
+    stream({
+      message: text,
+      playerContext,
+      conversationHistory: messages,
+      onChunk: (chunk) => {
+        streamRef.current += chunk
+        setStreamingMessage(streamRef.current)
+      },
+      onDone: () => {
+        const finalContent = streamRef.current
+        streamRef.current = ''
+        setStreamingMessage('')
+        setLoading(false)
+        setMessages(prev => [...prev, { role: 'assistant', content: finalContent }])
+      },
+      onError: (err) => {
+        console.error('Chat stream error:', err)
+        setLoading(false)
+        setStreamingMessage('')
+      },
+    })
   }
+
+  return { messages, streamingMessage, loading, sendMessage }
 }

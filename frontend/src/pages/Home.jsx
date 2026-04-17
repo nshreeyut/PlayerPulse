@@ -32,6 +32,7 @@
  */
 
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import PlayerSearch from '../components/PlayerSearch/PlayerSearch'
 import AnalyticsPanel from '../components/AnalyticsPanel/AnalyticsPanel'
 import ChatPanel from '../components/ChatPanel/ChatPanel'
@@ -54,32 +55,34 @@ function Home() {
 
   return (
     <div className="home-page">
-      <PlayerSearch onSearch={handleSearch} />
+      <header className="site-header">
+        <div className="site-header-inner">
+          <div className="site-logo">
+            <span className="logo-pulse" />
+            PlayerPulse
+          </div>
+          <Link to="/demo" className="header-demo-link">Live Demo →</Link>
+        </div>
+      </header>
 
-      {/*
-        Show the two-column layout only after a search has been triggered.
-        Before that, show an empty state to explain what the app does.
-      */}
+      <div className="search-wrapper">
+        <PlayerSearch onSearch={handleSearch} />
+      </div>
+
       {!selectedPlayerId ? (
         <div className="empty-state">
-          {/*
-            TODO: Design a welcoming empty state here.
-            Ideas:
-              - Project title + one-line description
-              - A brief explainer: "Search for a player to see their churn risk
-                and chat with the AI analyst about what it means."
-              - Maybe an example: "Try: Chess.com → hikaru"
-          */}
-          <p>TODO: Add an empty state / welcome message here.</p>
+          <div className="empty-glow" />
+          <h1 className="empty-title">AI-Powered Churn Prediction</h1>
+          <p className="empty-desc">
+            Look up any player by platform and ID. Get churn probability, SHAP feature breakdown, and an AI analyst ready to explain the prediction.
+          </p>
+          <Link to="/demo" className="demo-link">Explore the Demo →</Link>
         </div>
       ) : (
         <div className="results-layout">
-          {/* Left column: analytics charts and stats */}
           <div className="analytics-column">
             <AnalyticsPanel player={player} loading={loading} error={error} />
           </div>
-
-          {/* Right column: chatbot, pre-loaded with this player's context */}
           <div className="chat-column">
             <ChatPanel playerContext={player} />
           </div>

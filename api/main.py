@@ -23,8 +23,8 @@ from api.config import settings
 # Create the FastAPI app instance.
 # The title/description appear in your auto-generated /docs page.
 app = FastAPI(
-    title="Game Churn Prediction API",
-    description="Predict and explain player churn across multiple gaming platforms.",
+    title="PlayerPulse API",
+    description="AI-powered player churn prediction platform for game studios.",
     version="1.0.0",
 )
 
@@ -39,7 +39,7 @@ app = FastAPI(
 # TODO: Before deploying, add your Vercel URL to settings.cors_origins in config.py.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -58,6 +58,9 @@
  *   5. Add a small legend explaining red = increases risk, green = decreases risk
  */
 
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ReferenceLine, Cell, ResponsiveContainer,
+} from 'recharts'
 import './ShapChart.css'
 
 function ShapChart({ shapValues }) {
@@ -65,17 +68,35 @@ function ShapChart({ shapValues }) {
     return <p className="shap-empty">No SHAP data available.</p>
   }
 
-  // Top 8 most impactful features (already sorted by the API)
   const topFeatures = shapValues.slice(0, 8)
 
   return (
     <div className="shap-chart">
       <h3>What's Driving This Prediction?</h3>
-      {/*
-        TODO: Replace this placeholder with a Recharts BarChart.
-        The data is `topFeatures` — each item has label, shap_value, direction.
-      */}
-      <p>TODO: Render the SHAP bar chart using Recharts</p>
+      <div className="shap-legend">
+        <span className="legend-item increases">Increases risk</span>
+        <span className="legend-item decreases">Decreases risk</span>
+      </div>
+      <ResponsiveContainer width="100%" height={280}>
+        <BarChart data={topFeatures} layout="vertical" margin={{ left: 0, right: 20, top: 4, bottom: 4 }}>
+          <XAxis type="number" tick={{ fontSize: 11, fill: '#888' }} />
+          <YAxis type="category" dataKey="label" width={185} tick={{ fontSize: 11, fill: '#ccc' }} />
+          <Tooltip
+            formatter={(value) => [value.toFixed(4), 'SHAP value']}
+            contentStyle={{ background: '#1a1d2e', border: '1px solid #3a3d5e', borderRadius: 6 }}
+            labelStyle={{ color: '#ccc' }}
+          />
+          <ReferenceLine x={0} stroke="#555" />
+          <Bar dataKey="shap_value" radius={[0, 3, 3, 0]}>
+            {topFeatures.map((entry, i) => (
+              <Cell
+                key={i}
+                fill={entry.direction === 'increases_churn' ? '#e05c5c' : '#5cb85c'}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   )
 }

@@ -1,13 +1,42 @@
-/* TODO: Style the SHAP chart section */
-.shap-chart h3 {
-  font-size: 0.95rem;
-  color: #aaa;
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.shap-chart {
+  border-top: 1px solid #1e2235;
+  padding-top: 1rem;
 }
 
+.shap-chart h3 {
+  font-size: 0.65rem;
+  color: #424666;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.shap-legend {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.legend-item {
+  font-size: 0.7rem;
+  color: #424666;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-item::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+.legend-item.increases::before { background: #e05c5c; }
+.legend-item.decreases::before { background: #5cb85c; }
+
 .shap-empty {
-  color: #666;
-  font-size: 0.875rem;
+  color: #3e4260;
+  font-size: 0.8rem;
 }

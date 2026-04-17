@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from game_churn.collectors.opendota import OpenDotaCollector
-from game_churn.collectors.rawg import RawgCollector
-from game_churn.collectors.steam import SteamCollector
+from playerpulse.collectors.opendota import OpenDotaCollector
+from playerpulse.collectors.rawg import RawgCollector
+from playerpulse.collectors.steam import SteamCollector
 
 
 def test_opendota_collect(tmp_path: object) -> None:
@@ -31,7 +31,7 @@ def test_steam_collect(tmp_path: object) -> None:
     steam_id = "76561198012345678"
     with (
         patch.object(SteamCollector, "_get") as mock_get,
-        patch("game_churn.collectors.steam.settings") as mock_settings,
+        patch("playerpulse.collectors.steam.settings") as mock_settings,
     ):
         mock_settings.steam_api_key = "fake_key"
         mock_settings.request_timeout = 30
@@ -62,7 +62,7 @@ def test_steam_collect_private_friends(tmp_path: object) -> None:
     steam_id = "76561198012345678"
     with (
         patch.object(SteamCollector, "_get") as mock_get,
-        patch("game_churn.collectors.steam.settings") as mock_settings,
+        patch("playerpulse.collectors.steam.settings") as mock_settings,
     ):
         mock_settings.steam_api_key = "fake_key"
         mock_settings.request_timeout = 30

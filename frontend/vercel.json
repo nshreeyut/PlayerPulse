@@ -3,15 +3,3 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
-
-// WHY THIS FILE EXISTS:
-// ----------------------
-// Your app is a Single Page Application (SPA) — React handles all routing
-// in the browser using react-router-dom.
-//
-// Without this file, if a user visits /chess_com/hikaru directly (or refreshes
-// that URL), Vercel tries to find a file at that path on the server — it doesn't
-// exist — and returns a 404.
-//
-// This rewrite rule tells Vercel: "For ANY path, serve index.html."
-// React Router then reads the URL and renders the right component.

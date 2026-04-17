@@ -1,116 +1,109 @@
 """
 SHAP Service
 =============
-Handles loading and formatting SHAP (SHapley Additive exPlanations) values.
+Handles live SHAP computation for any player using a cached TreeExplainer.
 
-WHAT IS SHAP?
--------------
-SHAP answers: "WHY did the model predict this player would churn?"
-
-Each feature gets a SHAP value representing its contribution to the prediction:
-  - Positive value  → pushed the prediction TOWARD churn
-  - Negative value  → pushed the prediction AWAY from churn
-  - Larger magnitude = stronger influence on this specific prediction
-
-Example for a high-risk player:
-  days_since_last_game: +0.42  ← biggest churn driver
-  engagement_score:     +0.31  ← also pushing toward churn
-  games_7d:             -0.18  ← slightly protective (still playing some)
-  win_rate_7d:          -0.05  ← minor protective factor
-
-HOW SHAP VALUES WERE GENERATED:
----------------------------------
-In src/game_churn/models/train.py, after training XGBoost:
-  import shap
-  explainer = shap.TreeExplainer(xgboost_model)
-  shap_values = explainer.shap_values(X_test)
-  joblib.dump({"values": shap_values, "player_ids": test_ids}, "models/shap_values.joblib")
-
-So models/shap_values.joblib contains a dict with:
-  - "values":     numpy array of shape (n_players, n_features)
-  - "player_ids": list of player IDs aligned with the rows
-
-NOTE: If this structure differs from what train.py actually saved,
-look at train.py and adjust get_player_shap() accordingly.
+Live computation (vs pre-computed values) works for ANY player — not just the
+200 test-set rows. The explainer object is cached with @lru_cache so it's only
+built once per API process lifetime.
 """
 
-import joblib
 import numpy as np
+import shap
 from functools import lru_cache
 
-from api.config import settings
-from api.services.model_service import FEATURE_COLUMNS
+from api.services.model_service import FEATURE_COLUMNS, load_model, load_scaler
 
-# Human-readable labels for each feature.
+# Human-readable labels for every feature in FEATURE_COLUMNS.
 # Used by the LangChain agent to generate plain-English explanations.
 FEATURE_LABELS = {
-    "games_7d":              "Games played in the last 7 days",
-    "games_14d":             "Games played in the last 14 days",
-    "games_30d":             "Games played in the last 30 days",
-    "playtime_hours_7d":     "Hours played in the last 7 days",
-    "playtime_hours_14d":    "Hours played in the last 14 days",
-    "playtime_hours_30d":    "Hours played in the last 30 days",
-    "avg_daily_sessions_7d": "Average daily sessions (last 7 days)",
-    "avg_daily_sessions_30d":"Average daily sessions (last 30 days)",
-    "max_gap_days_30d":      "Longest break between games (last 30 days)",
-    "games_trend_7d_vs_14d": "Activity trend (recent vs earlier — above 0.5 = increasing)",
-    "win_rate_7d":           "Win rate in the last 7 days",
-    "win_rate_30d":          "Win rate in the last 30 days",
-    "current_rating":        "Current skill rating",
-    "rating_change_30d":     "Rating change over last 30 days",
-    "unique_peers_30d":      "Unique teammates in the last 30 days",
-    "games_with_peers_30d":  "Games played with teammates (last 30 days)",
-    "engagement_score":      "Overall engagement score (0–100 composite)",
-    "days_since_last_game":  "Days since their last game",
+    "games_7d":                "Games played in the last 7 days",
+    "games_14d":               "Games played in the last 14 days",
+    "games_30d":               "Games played in the last 30 days",
+    "playtime_7d_hours":       "Hours played in the last 7 days",
+    "playtime_14d_hours":      "Hours played in the last 14 days",
+    "playtime_30d_hours":      "Hours played in the last 30 days",
+    "avg_daily_sessions_7d":   "Average daily sessions (last 7 days)",
+    "avg_daily_sessions_14d":  "Average daily sessions (last 14 days)",
+    "avg_daily_sessions_30d":  "Average daily sessions (last 30 days)",
+    "max_gap_days_30d":        "Longest break between games (last 30 days)",
+    "games_trend_7d_vs_14d":   "Activity trend (recent vs earlier — above 0.5 = increasing)",
+    "playtime_trend_7d_vs_14d":"Playtime trend (recent vs earlier)",
+    "win_rate_7d":             "Win rate in the last 7 days",
+    "win_rate_30d":            "Win rate in the last 30 days",
+    "rating_change_30d":       "Rating change over last 30 days",
+    "unique_peers_30d":        "Unique teammates in the last 30 days",
+    "peer_games_30d":          "Games played with teammates (last 30 days)",
+    "engagement_score":        "Overall engagement score (0–100 composite)",
+    "days_since_last_game":    "Days since their last game",
+    "abandon_rate":            "Fraction of games abandoned mid-match",
+    "abnormal_duration_rate":  "Fraction of games with abnormal duration",
+    "short_session_rate":      "Fraction of sessions shorter than 10 minutes",
+    "remake_rate":             "Fraction of games that were remade (< 5 min)",
+    "early_exit_rate":         "Fraction of games exited early",
+    "avg_sinr_db":             "Average signal quality (SINR dB)",
+    "peak_hour_latency_ms":    "Peak hour latency (ms)",
+    "platform_encoded":        "Gaming platform",
 }
 
 
 @lru_cache(maxsize=1)
-def load_shap_values():
-    """
-    Load pre-computed SHAP values from disk (cached after first load).
+def _get_explainer():
+    """Build and cache a SHAP TreeExplainer for LightGBM (called once per process).
 
-    TODO: Load and return settings.models_dir / "shap_values.joblib" using joblib.load().
-    Raise FileNotFoundError if the file doesn't exist.
+    LightGBM is used here because XGBoost 2.x has a known SHAP serialization
+    incompatibility (base_score stored as string). LightGBM gives equivalent
+    SHAP quality and works reliably.
     """
-    raise NotImplementedError("TODO: implement load_shap_values()")
+    model = load_model("lightgbm")
+    return shap.TreeExplainer(model)
+
+
+def compute_shap_live(features: dict) -> list[dict]:
+    """
+    Compute SHAP feature contributions for any player on-the-fly.
+
+    Args:
+        features: dict of {feature_name: value} covering all FEATURE_COLUMNS
+
+    Returns sorted list (most impactful first):
+    [
+        {
+            "feature":    "days_since_last_game",
+            "label":      "Days since their last game",
+            "shap_value": 0.42,
+            "direction":  "increases_churn",
+        },
+        ...
+    ]
+    """
+    explainer = _get_explainer()
+    scaler = load_scaler()
+
+    values = [features.get(col, 0) for col in FEATURE_COLUMNS]
+    X = np.array(values).reshape(1, -1)
+    X_scaled = scaler.transform(X)
+
+    shap_row = explainer.shap_values(X_scaled)[0]
+
+    pairs = [
+        {
+            "feature":    col,
+            "label":      FEATURE_LABELS.get(col, col),
+            "shap_value": round(float(shap_row[i]), 4),
+            "direction":  "increases_churn" if shap_row[i] > 0 else "decreases_churn",
+        }
+        for i, col in enumerate(FEATURE_COLUMNS)
+    ]
+    return sorted(pairs, key=lambda x: abs(x["shap_value"]), reverse=True)
 
 
 def get_player_shap(player_id: str, platform: str) -> list[dict] | None:
     """
-    Get SHAP feature contributions for a specific player, sorted by impact.
+    Get SHAP values for a player already in the dataset (via their features).
+    Returns None — callers should use compute_shap_live() with live features instead.
 
-    Returns a list of feature contributions (most impactful first):
-    [
-        {
-            "feature":     "days_since_last_game",
-            "label":       "Days since their last game",
-            "shap_value":  0.42,
-            "direction":   "increases_churn",   # positive SHAP = toward churn
-        },
-        {
-            "feature":     "games_7d",
-            "label":       "Games played in the last 7 days",
-            "shap_value":  -0.18,
-            "direction":   "decreases_churn",   # negative SHAP = away from churn
-        },
-        ...
-    ]
-
-    Returns None if the player isn't found in the SHAP data.
-
-    TODO: Implement this.
-    Steps:
-      1. shap_data = load_shap_values()
-         It's a dict: {"values": np.array, "player_ids": list}
-      2. Build a combined key to match the player:
-         key = f"{player_id}_{platform}"
-         Look it up in shap_data["player_ids"]
-      3. If not found, return None
-      4. Get the player's SHAP row: shap_data["values"][index]
-      5. Pair each SHAP value with its feature name (use FEATURE_COLUMNS for order)
-      6. Sort by abs(shap_value) descending
-      7. Add "label" from FEATURE_LABELS and "direction" based on sign
-      8. Return as a list of dicts
+    Pre-computed SHAP over a fixed test set is no longer used; live computation
+    works for any player including new ones not in the training data.
     """
-    raise NotImplementedError("TODO: implement get_player_shap()")
+    return None

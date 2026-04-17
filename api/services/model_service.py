@@ -41,62 +41,64 @@ from api.config import settings
 # The feature columns in the exact order the model was trained on.
 # IMPORTANT: The model expects features in this specific order.
 # If you add or remove features in the ML pipeline, update this list.
-# Check src/game_churn/models/train.py to find the original column order.
+# Must stay in sync with FEATURE_COLS in src/playerpulse/models/train.py.
 FEATURE_COLUMNS = [
     "games_7d",
     "games_14d",
     "games_30d",
-    "playtime_hours_7d",
-    "playtime_hours_14d",
-    "playtime_hours_30d",
+    "playtime_7d_hours",
+    "playtime_14d_hours",
+    "playtime_30d_hours",
     "avg_daily_sessions_7d",
+    "avg_daily_sessions_14d",
     "avg_daily_sessions_30d",
     "max_gap_days_30d",
     "games_trend_7d_vs_14d",
+    "playtime_trend_7d_vs_14d",
     "win_rate_7d",
     "win_rate_30d",
-    "current_rating",
     "rating_change_30d",
     "unique_peers_30d",
-    "games_with_peers_30d",
+    "peer_games_30d",
     "engagement_score",
     "days_since_last_game",
+    # Real network proxy features
+    "abandon_rate",
+    "abnormal_duration_rate",
+    "short_session_rate",
+    "remake_rate",
+    "early_exit_rate",
+    # Sionna-grounded network features
+    "avg_sinr_db",
+    "peak_hour_latency_ms",
+    # Game platform (encoded): 0=opendota, 1=steam, 2=riot_lol, 3=riot_valorant
+    "platform_encoded",
 ]
 
 
 @lru_cache(maxsize=None)
 def load_model(model_id: str = DEFAULT_MODEL):
-    """
-    Load a registered model from disk and cache it in memory.
-
-    @lru_cache means the .joblib file is only read from disk ONCE per model_id.
-    Every subsequent call returns the in-memory object instantly.
-
-    TODO: Implement this function.
-    Steps:
-      1. Call get_model_info(model_id) to get the model's path
-      2. Check that the path exists — raise FileNotFoundError with a helpful
-         message if it doesn't (hint: tell them to run `make train`)
-      3. Use joblib.load(path) to deserialize the model
-      4. Return the model object
-    """
-    raise NotImplementedError("TODO: implement load_model()")
+    """Load a registered model from disk and cache it in memory."""
+    info = get_model_info(model_id)
+    path = info["path"]
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Model file not found: {path}\n"
+            "Run `make train` to generate model artifacts."
+        )
+    return joblib.load(path)
 
 
 @lru_cache(maxsize=1)
 def load_scaler():
-    """
-    Load the StandardScaler fitted during training.
-
-    CRITICAL: You must use the EXACT scaler from training.
-    The scaler subtracts the training mean and divides by training std deviation.
-    If you use a different scaler (or no scaler), the model sees different numbers
-    than it was trained on and predictions will be meaningless.
-
-    TODO: Load and return settings.models_dir / "scaler.joblib" using joblib.load().
-    Raise FileNotFoundError if it doesn't exist.
-    """
-    raise NotImplementedError("TODO: implement load_scaler()")
+    """Load the StandardScaler fitted during training."""
+    path = settings.models_dir / "scaler.joblib"
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Scaler not found: {path}\n"
+            "Run `make train` to generate model artifacts."
+        )
+    return joblib.load(path)
 
 
 def predict_churn(features: dict, model_id: str = DEFAULT_MODEL) -> dict:
@@ -109,24 +111,31 @@ def predict_churn(features: dict, model_id: str = DEFAULT_MODEL) -> dict:
 
     Returns:
         {
-            "churn_probability": 0.73,   # float between 0 and 1
-            "churn_predicted": True,      # True if probability >= 0.5
-            "risk_level": "High",         # "Low" / "Medium" / "High"
+            "churn_probability": 0.73,
+            "churn_predicted": True,
+            "risk_level": "High",
             "model_used": "ensemble"
         }
-
-    TODO: Implement this function.
-    Steps:
-      1. Call load_model(model_id) and load_scaler()
-      2. Build a numpy array from `features` in FEATURE_COLUMNS order:
-             values = [features.get(col, 0) for col in FEATURE_COLUMNS]
-             X = np.array(values).reshape(1, -1)
-      3. Scale: X_scaled = scaler.transform(X)
-      4. Predict: proba = model.predict_proba(X_scaled)[0][1]  ← index 1 = churn prob
-      5. Determine risk_level:
-             < 0.4  → "Low"
-             0.4–0.7 → "Medium"
-             > 0.7  → "High"
-      6. Return the dict described above
     """
-    raise NotImplementedError("TODO: implement predict_churn()")
+    model = load_model(model_id)
+    scaler = load_scaler()
+
+    values = [features.get(col, 0) for col in FEATURE_COLUMNS]
+    X = np.array(values).reshape(1, -1)
+    X_scaled = scaler.transform(X)
+
+    proba = float(model.predict_proba(X_scaled)[0][1])
+
+    if proba > 0.7:
+        risk_level = "High"
+    elif proba > 0.4:
+        risk_level = "Medium"
+    else:
+        risk_level = "Low"
+
+    return {
+        "churn_probability": round(proba, 4),
+        "churn_predicted": proba >= 0.5,
+        "risk_level": risk_level,
+        "model_used": model_id,
+    }

@@ -70,5 +70,30 @@ export async function streamChat({
   onDone,
   onError,
 }) {
-  throw new Error('TODO: implement streamChat() — start with the non-streaming version')
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        player_context: playerContext,
+        conversation_history: conversationHistory,
+      }),
+    })
+
+    if (!res.ok) throw new Error(`Chat error: ${res.status}`)
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      onChunk(decoder.decode(value, { stream: true }))
+    }
+
+    onDone()
+  } catch (err) {
+    onError(err)
+  }
 }

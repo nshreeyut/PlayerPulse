@@ -74,8 +74,8 @@ export async function streamDemoChat({
   }
 }
 
-/** Pre-defined synthetic player IDs for the demo search dropdown. */
+/** Pre-defined demo player IDs. */
 export const DEMO_PLAYER_IDS = Array.from({ length: 50 }, (_, i) => ({
-  id: `synthetic_${i}`,
-  label: `synthetic_${i}`,
+  id: `Player_${i + 1}`,
+  label: `Player_${i + 1}`,
 }));

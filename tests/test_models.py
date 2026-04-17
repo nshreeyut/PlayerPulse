@@ -6,8 +6,8 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 
-from game_churn.models.synthetic import generate_synthetic_data
-from game_churn.models.train import FEATURE_COLS, TARGET_COL, prepare_data
+from playerpulse.models.synthetic import generate_synthetic_data
+from playerpulse.models.train import FEATURE_COLS, TARGET_COL, prepare_data
 
 
 def test_synthetic_data_shape() -> None:

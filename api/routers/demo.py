@@ -52,7 +52,7 @@ def demo_player_analytics(player_id: str):
         raise HTTPException(
             status_code=404,
             detail=f"Demo player '{player_id}' not found. "
-                   "Valid IDs are 'synthetic_0' through 'synthetic_49'.",
+                   "Valid IDs are 'Player_1' through 'Player_50'.",
         )
     return player
 

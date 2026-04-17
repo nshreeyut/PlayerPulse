@@ -1,21 +1,15 @@
-/**
- * DemoBanner
- * Shown at the top of the page whenever demo mode is active.
- * Makes it unmistakably clear the user is looking at synthetic data.
- */
+import './DemoBanner.css'
+
 export default function DemoBanner({ onExit }) {
   return (
     <div className="demo-banner">
-      <div className="demo-banner__content">
-        <span className="demo-banner__icon">⚠</span>
-        <span className="demo-banner__text">
-          <strong>Demo Mode</strong> — All data is synthetically generated.
-          Predictions, player profiles, and chat responses do not reflect real players.
-        </span>
-      </div>
       <button className="demo-banner__exit" onClick={onExit}>
-        Exit Demo
+        ← Exit Demo
       </button>
+      <div className="demo-banner__center">
+        <h1 className="demo-banner__title">Demo Mode</h1>
+        <p className="demo-banner__caption">Runs on synthetically generated data</p>
+      </div>
     </div>
-  );
+  )
 }

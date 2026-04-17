@@ -18,35 +18,22 @@
 
 import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
-
-// TODO: Once you build the Navbar component, import and add it here.
-// import Navbar from './components/Navbar/Navbar'
+import Demo from './pages/Demo'
 
 function App() {
   return (
     <div className="app">
-      {/*
-        TODO: Add <Navbar /> here so it appears on every page.
-        It should show the project name and any global navigation links.
-      */}
+      <Routes>
+        {/* Home page — player search + analytics + chat (real data pipeline) */}
+        <Route path="/" element={
+          <main>
+            <Home />
+          </main>
+        } />
 
-      <main>
-        <Routes>
-          {/* The home page — player search + analytics + chat */}
-          <Route path="/" element={<Home />} />
-
-          {/*
-            TODO: If you want each player to have a shareable URL, add a route like:
-              <Route path="/:platform/:playerId" element={<Home />} />
-
-            Then in Home.jsx you can read the URL params with useParams():
-              import { useParams } from 'react-router-dom'
-              const { platform, playerId } = useParams()
-
-            This lets users bookmark or share a link to a specific player.
-          */}
-        </Routes>
-      </main>
+        {/* Demo page — synthetic data, no API key required */}
+        <Route path="/demo" element={<Demo />} />
+      </Routes>
     </div>
   )
 }
