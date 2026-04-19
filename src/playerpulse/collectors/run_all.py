@@ -8,6 +8,7 @@ Usage: python -m playerpulse.collectors.run_all
 from __future__ import annotations
 
 import logging
+import time
 
 from playerpulse.collectors.opendota import OpenDotaCollector
 from playerpulse.collectors.rawg import RawgCollector
@@ -102,10 +103,13 @@ def _expand_opendota_players(target: int = 200) -> list[str]:
     import httpx
 
     log.info("Fetching %d random ranked players from OpenDota /explorer...", target)
+    # TABLESAMPLE is much faster than ORDER BY RANDOM() on large tables.
+    # Adjust the percentage (default 0.01%) to hit roughly `target` rows.
+    pct = max(0.001, round(target / 10_000_000, 4))
     sql = (
-        f"SELECT account_id FROM players "
-        f"WHERE win + lose > 50 "
-        f"ORDER BY RANDOM() "
+        f"SELECT account_id FROM player_matches "
+        f"TABLESAMPLE SYSTEM({pct}) "
+        f"WHERE account_id IS NOT NULL "
         f"LIMIT {target}"
     )
     try:
@@ -146,6 +150,7 @@ def main() -> None:
                 log.info("Collected %d files for OpenDota/%s", len(paths), account_id)
             except Exception:
                 log.exception("Failed to collect OpenDota/%s", account_id)
+            time.sleep(1.0)  # ~60 req/min free-tier rate limit (5 req/player → 12 players/min)
 
     # -------------------------------------------------------------------
     # Steam — requires STEAM_API_KEY

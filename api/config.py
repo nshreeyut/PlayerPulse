@@ -26,6 +26,7 @@ Default models per provider (override with LLM_MODEL):
   ollama    → llama3.2
 """
 
+import os
 from pathlib import Path
 
 from pydantic_settings import BaseSettings
@@ -77,10 +78,18 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     # ── Paths ─────────────────────────────────────────────────────────────
-    models_dir: Path = PROJECT_ROOT / "models"
+    # Set MODELS_DIR=/var/data/models in Render dashboard to use persistent disk
+    models_dir: Path = Path(os.environ.get("MODELS_DIR", str(PROJECT_ROOT / "models")))
     data_dir: Path = PROJECT_ROOT / "data"
     studios_dir: Path = PROJECT_ROOT / "data" / "studios"
     features_path: Path = PROJECT_ROOT / "data" / "03_features" / "player_features.parquet"
+
+    # ── Model auto-download ────────────────────────────────────────────────
+    # Base URL of a GitHub Release containing the trained .joblib files.
+    # e.g. https://github.com/nshreeyut/PlayerPulse/releases/download/v1.0-models
+    # On cold start, any missing files in MODELS_DIR are fetched automatically.
+    # Leave empty to skip (models must already be present on disk).
+    model_release_url: str = os.environ.get("MODEL_RELEASE_URL", "")
 
     class Config:
         env_file = ".env"

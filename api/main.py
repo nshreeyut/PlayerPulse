@@ -14,11 +14,25 @@ Then visit:
   http://localhost:8000/health ← confirm the server is running
 """
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routers import players, chat, demo
 from api.config import settings
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Run startup tasks before the server begins accepting requests."""
+    from api.startup import ensure_models
+
+    if settings.model_release_url and settings.models_dir:
+        ensure_models(settings.models_dir, settings.model_release_url)
+
+    yield  # server runs here
+
 
 # Create the FastAPI app instance.
 # The title/description appear in your auto-generated /docs page.
@@ -26,6 +40,7 @@ app = FastAPI(
     title="PlayerPulse API",
     description="AI-powered player churn prediction platform for game studios.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # ---------------------------------------------------------
