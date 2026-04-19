@@ -322,8 +322,9 @@ def main() -> None:
     models = build_models()
     train_and_log(models, X_train, X_test, y_train, y_test, feature_names)
 
-    # Generate SHAP for best tree model
-    generate_shap_plots("xgboost", X_test, feature_names)
+    # Generate SHAP using LightGBM — XGBoost 2.x has a known base_score
+    # serialization incompatibility with SHAP ('[6E-1]' float parse error).
+    generate_shap_plots("lightgbm", X_test, feature_names)
 
     log.info("Training pipeline complete!")
 
