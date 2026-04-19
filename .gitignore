@@ -23,6 +23,8 @@ data/03_features/
 data/04_predictions/
 models/*.joblib
 models/*.pkl
+# Demo models are synthetic-only — safe to commit so Render has them without a disk
+!models/demo/
 
 # MLflow
 .mlflow/

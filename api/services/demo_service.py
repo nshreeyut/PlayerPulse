@@ -24,6 +24,11 @@ import polars as pl
 from playerpulse.models.synthetic import generate_synthetic_data
 from playerpulse.utils.config import MODELS_DIR
 
+# Demo models are trained on synthetic data only and committed to git.
+# They live in models/demo/ — never in MODELS_DIR (which may point to
+# a Render persistent disk that only holds real-data production models).
+DEMO_MODELS_DIR = MODELS_DIR / "demo"
+
 # Must match the exact column order used in train.py
 FEATURE_COLS = [
     "games_7d",
@@ -137,10 +142,10 @@ def _load_demo_assets() -> tuple[pl.DataFrame, np.ndarray, np.ndarray, np.ndarra
 
     df = generate_synthetic_data(n_players=50, seed=42)
 
-    scaler = joblib.load(MODELS_DIR / "scaler.joblib")
+    scaler = joblib.load(DEMO_MODELS_DIR / "scaler.joblib")
     # Use LightGBM for SHAP — XGBoost 2.x has a known base_score serialization
     # incompatibility with SHAP. LightGBM gives equivalent SHAP quality.
-    lgbm   = joblib.load(MODELS_DIR / "lightgbm.joblib")
+    lgbm   = joblib.load(DEMO_MODELS_DIR / "lightgbm.joblib")
 
     X = df.select(FEATURE_COLS).fill_null(0).to_numpy()
     X_scaled = scaler.transform(X)
