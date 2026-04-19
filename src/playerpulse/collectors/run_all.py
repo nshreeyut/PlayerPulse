@@ -104,11 +104,10 @@ def _expand_opendota_players(target: int = 200) -> list[str]:
 
     log.info("Fetching %d random ranked players from OpenDota /explorer...", target)
     # TABLESAMPLE is much faster than ORDER BY RANDOM() on large tables.
-    # Adjust the percentage (default 0.01%) to hit roughly `target` rows.
-    pct = max(0.001, round(target / 10_000_000, 4))
+    # 0.01% of the table reliably returns 200+ rows; LIMIT caps the result.
     sql = (
         f"SELECT account_id FROM player_matches "
-        f"TABLESAMPLE SYSTEM({pct}) "
+        f"TABLESAMPLE SYSTEM(0.01) "
         f"WHERE account_id IS NOT NULL "
         f"LIMIT {target}"
     )
