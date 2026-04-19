@@ -149,7 +149,7 @@ def main() -> None:
                 log.info("Collected %d files for OpenDota/%s", len(paths), account_id)
             except Exception:
                 log.exception("Failed to collect OpenDota/%s", account_id)
-            time.sleep(1.0)  # ~60 req/min free-tier rate limit (5 req/player → 12 players/min)
+            time.sleep(6.0)  # OpenDota free tier: 60 req/min. Each player = 5 req → 1 player/6s
 
     # -------------------------------------------------------------------
     # Steam — requires STEAM_API_KEY
