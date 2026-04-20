@@ -110,6 +110,9 @@ class RiotLoLCollector(RiotBaseCollector):
         puuid = account["puuid"]
         log.info("Resolved %s → PUUID %s", player_id, puuid[:12] + "...")
         saved.append(self._save_json(account, f"{puuid}_account.json"))
+        # Lookup file: GameName#TAG → PUUID, used by data_service.get_player_live()
+        safe_id = player_id.replace("#", "_")
+        saved.append(self._save_json({"puuid": puuid, "riot_id": player_id}, f"{safe_id}_lookup.json"))
 
         # Match IDs
         try:
@@ -191,6 +194,9 @@ class RiotValorantCollector(RiotBaseCollector):
         puuid = account["puuid"]
         log.info("Resolved %s → PUUID %s", player_id, puuid[:12] + "...")
         saved.append(self._save_json(account, f"{puuid}_account.json"))
+        # Lookup file: GameName#TAG → PUUID, used by data_service.get_player_live()
+        safe_id = player_id.replace("#", "_")
+        saved.append(self._save_json({"puuid": puuid, "riot_id": player_id}, f"{safe_id}_lookup.json"))
 
         # Match list
         try:

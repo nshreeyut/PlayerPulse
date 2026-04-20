@@ -133,14 +133,24 @@ def get_player_live(player_id: str, platform: str) -> dict:
         collector.collect(player_id)
 
     # 2. Standardize
+    # Riot collectors save files keyed by PUUID, not by GameName#TAG.
+    # Resolve via the lookup file saved by the collector.
     if platform == "opendota":
         activities = standardize_opendota(player_id)
     elif platform == "steam":
         activities = standardize_steam(player_id)
-    elif platform == "riot_lol":
-        activities = standardize_riot_lol(player_id)
-    elif platform == "riot_valorant":
-        activities = standardize_riot_valorant(player_id)
+    elif platform in ("riot_lol", "riot_valorant"):
+        import json
+        from playerpulse.utils.config import RAW_DIR
+        safe_id = player_id.replace("#", "_")
+        lookup_path = RAW_DIR / platform / f"{safe_id}_lookup.json"
+        if not lookup_path.exists():
+            raise ValueError(f"Lookup file not found for {player_id} — collection may have failed")
+        puuid = json.loads(lookup_path.read_text())["puuid"]
+        if platform == "riot_lol":
+            activities = standardize_riot_lol(puuid)
+        else:
+            activities = standardize_riot_valorant(puuid)
     else:
         raise ValueError(f"Unknown platform: {platform}")
 
