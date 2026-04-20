@@ -72,7 +72,8 @@ class RiotLoLCollector(RiotBaseCollector):
 
     platform = "riot_lol"
     # Keep under development key budget: 1 account + 1 match-ids + N match details
-    MAX_MATCHES = 50
+    # 20 matches × 1.3s = ~26s for live lookups (matches Valorant budget)
+    MAX_MATCHES = 20
 
     def get_match_ids(self, puuid: str, count: int = 100) -> list[str]:
         """Fetch ranked solo/duo match IDs (queue=420)."""

@@ -36,9 +36,9 @@ const client = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // Requests taking longer than 30s throw an error.
-  // Important for LLM calls, which can be slow.
-  timeout: 30000,
+  // Live player lookups collect real API data (Riot: up to 20 matches × 1.3s each = ~30s).
+  // Set to 90s to give the backend enough room.
+  timeout: 90000,
 })
 
 // ---------------------------------------------------------
