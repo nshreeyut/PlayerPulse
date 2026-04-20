@@ -47,7 +47,9 @@ export async function fetchModels() {
  * }
  */
 export async function fetchPlayerAnalytics(platform, playerId, modelId = 'ensemble') {
-  const response = await client.get(`/api/v1/players/${platform}/${playerId}`, {
+  // encodeURIComponent encodes '#' as '%23' so Riot IDs like "Name#TAG"
+  // survive the URL path without being truncated at the fragment symbol.
+  const response = await client.get(`/api/v1/players/${platform}/${encodeURIComponent(playerId)}`, {
     params: { model_id: modelId },
   })
   return response.data

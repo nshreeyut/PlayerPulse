@@ -44,7 +44,7 @@ def search_players(
         raise HTTPException(status_code=503, detail="Features not ready. Run `make train`.")
 
 
-@router.get("/{platform}/{player_id}")
+@router.get("/{platform}/{player_id:path}")
 def get_player_analytics(
     platform: str,
     player_id: str,
