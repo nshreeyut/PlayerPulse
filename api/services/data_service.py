@@ -135,6 +135,7 @@ def get_player_live(player_id: str, platform: str) -> dict:
     # 2. Standardize
     # Riot collectors save files keyed by PUUID, not by GameName#TAG.
     # Resolve via the lookup file saved by the collector.
+    puuid: str | None = None
     if platform == "opendota":
         activities = standardize_opendota(player_id)
     elif platform == "steam":
@@ -158,9 +159,14 @@ def get_player_live(player_id: str, platform: str) -> dict:
         raise ValueError(f"No activity data found for player {player_id} on {platform}")
 
     # 3. Build features
+    # For Riot platforms the activities are keyed by PUUID, not by the human-readable
+    # Riot ID (GameName#TAG). Pass the PUUID so the time-window filters actually match,
+    # then overwrite player_id with the original ID for the API response.
     records = [a.model_dump() for a in activities]
     df = pl.DataFrame(records)
-    features = build_features_for_player(df, player_id, platform)
+    feature_key = puuid if platform in ("riot_lol", "riot_valorant") else player_id
+    features = build_features_for_player(df, feature_key, platform)
+    features["player_id"] = player_id  # Restore human-readable ID
 
     # 4. Add Sionna-grounded network features (archetype-inferred defaults)
     archetype = _infer_archetype_from_features(features)
