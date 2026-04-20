@@ -76,10 +76,10 @@ class RiotLoLCollector(RiotBaseCollector):
     MAX_MATCHES = 20
 
     def get_match_ids(self, puuid: str, count: int = 100) -> list[str]:
-        """Fetch ranked solo/duo match IDs (queue=420)."""
+        """Fetch all match IDs (all queues — ranked, normal, ARAM, etc.)."""
         return self._get(
             f"{self.cluster_url}/lol/match/v5/matches/by-puuid/{puuid}/ids",
-            params={"count": count, "queue": 420},
+            params={"count": count},
         )
 
     def get_match(self, match_id: str) -> dict:
